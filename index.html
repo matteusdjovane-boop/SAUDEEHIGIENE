@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerta RS Higiene - Monitoramento Comunitário de Mercados</title>
+    <!-- Carregamento do Tailwind CSS para estilização -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        /* Estilos customizados para o scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #e0e7ff; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3730a3; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Cabeçalho -->
+        <header class="bg-indigo-700 text-white p-6 rounded-xl shadow-lg mb-8">
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                Alerta RS Higiene <span class="text-indigo-200 text-2xl font-medium">| Monitoramento Cidadão</span>
+            </h1>
+            <p class="mt-2 text-indigo-200">
+                Use este canal para reportar irregularidades de higiene e validade em mercados e estabelecimentos no Rio Grande do Sul.
+            </p>
+        </header>
+
+        <!-- Informações do Usuário e Status de Conexão -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <p class="text-sm text-gray-700">
+                <span id="auth-status" class="font-semibold text-red-500">Conectando...</span>
+            </p>
+            <p class="text-xs text-gray-500 mt-2 sm:mt-0 break-all">
+                Seu ID de Usuário (para fins de autenticação): <span id="current-user-id" class="font-mono text-indigo-600 font-bold">...</span>
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Coluna de Formulário de Denúncia e Boas Práticas (Esquerda/Centro) -->
+            <div class="lg:col-span-2 space-y-8">
+                
+                <!-- Formulário de Denúncia -->
+                <section class="bg-white p-6 rounded-xl shadow-2xl border-t-4 border-red-500">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        Reportar Irregularidade
+                    </h2>
+                    <form id="report-form" class="space-y-4">
+                        <div>
+                            <label for="marketName" class="block text-sm font-medium text-gray-700">Nome do Estabelecimento (Mercado/Restaurante)</label>
+                            <input type="text" id="marketName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ex: Supermercado XYZ">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="city" class="block text-sm font-medium text-gray-700">Cidade (RS)</label>
+                                <input type="text" id="city" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ex: Porto Alegre">
+                            </div>
+                            <div>
+                                <label for="category" class="block text-sm font-medium text-gray-700">Tipo de Problema</label>
+                                <select id="category" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="Produtos Vencidos">Produtos Vencidos / Próx. da Validade</option>
+                                    <option value="Contaminação/Bolor">Contaminação (Bolor, Cheiro Azêdo)</option>
+                                    <option value="Falta de Limpeza">Falta de Limpeza / Pragas</option>
+                                    <option value="Temperatura">Problema de Temperatura/Refrigeração</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700">Descrição Detalhada do Problema</label>
+                            <textarea id="description" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500" placeholder="Descreva o que foi observado: Localização exata, data, etc."></textarea>
+                        </div>
+                        <button type="submit" id="submit-button" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:opacity-50" disabled>
+                            Enviar Denúncia
+                        </button>
+                        <p id="form-message" class="text-sm text-center mt-2"></p>
+                    </form>
+                </section>
+
+                <!-- Seção de Boas Práticas (Educação e Conscientização) - CONTEÚDO NOVO E DETALHADO -->
+                <section class="bg-white p-6 rounded-xl shadow-2xl border-t-4 border-indigo-500">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.206 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.832 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.794 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.168 18 16.5 18s-3.332.477-4.5 1.253"></path></svg>
+                        Estratégias Chave de Higiene e Qualidade
+                    </h2>
+                    <div class="space-y-6 text-gray-700">
+                        
+                        <!-- 🧼 Higiene e Controle Ambiental -->
+                        <h3 class="text-xl font-semibold text-indigo-700 mt-4 border-b pb-1">🧼 Higiene e Controle Ambiental</h3>
+                        <ul class="space-y-2 list-disc list-inside ml-4">
+                            <li>
+                                <strong>Controle Rígido de Temperatura:</strong> Geladeiras e freezers devem manter carne, leite, frios e congelados na temperatura correta. Termômetros digitais visíveis e alarmes são essenciais.
+                            </li>
+                            <li>
+                                <strong>Limpeza Frequente das Áreas:</strong> Lavagem diária do piso e higienização de bancadas, açougue, padaria e hortifrúti várias vezes ao dia para reduzir moscas e bactérias.
+                            </li>
+                            <li>
+                                <strong>Controle de Pragas:</strong> Uso de armadilhas luminosas, dedetização mensal e cortinas de ar ou telas em portas para impedir a contaminação cruzada por insetos e roedores.
+                            </li>
+                        </ul>
+
+                        <!-- 🗂 Organização e Validade -->
+                        <h3 class="text-xl font-semibold text-indigo-700 mt-4 border-b pb-1">🗂 Organização e Validade</h3>
+                        <ul class="space-y-2 list-disc list-inside ml-4">
+                            <li>
+                                <strong>Sistema PEPS (Primeiro que Entra, Primeiro que Sai):</strong> Produtos com validade mais curta devem ser posicionados na frente das prateleiras para garantir a rotatividade e evitar vencimentos.
+                            </li>
+                            <li>
+                                <strong>Rastreabilidade dos Produtos:</strong> Códigos de monitoramento da origem (carne, laticínios, hortifrúti) são cruciais para a retirada imediata de lotes irregulares (Exemplo Europa e Japão).
+                            </li>
+                        </ul>
+                        
+                        <!-- 🍎 Pontos Críticos de Manipulação -->
+                        <h3 class="text-xl font-semibold text-indigo-700 mt-4 border-b pb-1">🍎 Pontos Críticos de Manipulação</h3>
+                        <ul class="space-y-2 list-disc list-inside ml-4">
+                            <li>
+                                <strong>Hortifrúti:</strong> Retirada imediata de itens machucados ou podres e uso de Álcool 70% em bancadas. Deve-se controlar a pulverização de água para evitar fungos.
+                            </li>
+                            <li>
+                                <strong>Açougue e Peixaria:</strong> Facas, tábuas e máquinas devem ser higienizadas a cada uso. A carne deve estar sempre refrigerada e nunca exposta ao ar livre.
+                            </li>
+                        </ul>
+                        
+                        <!-- 🧪 Ações da Vigilância Sanitária -->
+                        <h3 class="text-xl font-semibold text-indigo-700 mt-4 border-b pb-1">🧪 Transparência e Fiscalização Internacional</h3>
+                        <ul class="space-y-2 list-disc list-inside ml-4">
+                            <li>
+                                <strong>EUA e Dinamarca:</strong> Adotam o Ranking Público de Higiene (A, B, C) e relatórios online, incentivando o consumidor a fiscalizar e escolher lojas bem avaliadas.
+                            </li>
+                            <li>
+                                <strong>Japão:</strong> Mantém um Padrão Ouro com inspeções extremamente rígidas e testes rápidos de bactérias em carnes e peixes.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+                <!-- Fim da Seção de Boas Práticas (CONTEÚDO NOVO) -->
+            </div>
+
+            <!-- Coluna de Denúncias Recentes (Direita) -->
+            <div class="lg:col-span-1">
+                <section class="bg-white p-6 rounded-xl shadow-2xl border-t-4 border-green-500 h-full">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.552-4.552a1.2 1.2 0 011.697 1.697L16.3 11.4l4.552 4.552a1.2 1.2 0 01-1.697 1.697L15 13.1l-4.552 4.552a1.2 1.2 0 01-1.697-1.697L13.7 11.4l-4.552-4.552a1.2 1.2 0 011.697-1.697L15 9.8"></path></svg>
+                        Denúncias Recentes (RS)
+                    </h2>
+                    <div id="reports-list" class="space-y-4 h-[600px] overflow-y-auto custom-scrollbar">
+                        <!-- Denúncias serão carregadas aqui -->
+                        <p id="loading-message" class="text-center text-gray-500">Carregando denúncias...</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Modal de Confirmação (Substitui alert/confirm) -->
+        <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-lg p-6 shadow-2xl max-w-sm w-full transform transition-all">
+                <h3 class="text-xl font-bold text-indigo-700 mb-3">Denúncia Enviada!</h3>
+                <p class="text-gray-700 mb-4">Sua denúncia foi registrada e está visível para a comunidade. Agradecemos sua participação cívica!</p>
+                <div class="flex justify-end">
+                    <button id="modal-close-button" class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp, orderBy, limit, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis globais fornecidas pelo ambiente
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth;
+        let currentUserId = null;
+        let isAuthReady = false;
+
+        const authStatusEl = document.getElementById('auth-status');
+        const userIdEl = document.getElementById('current-user-id');
+        const submitButton = document.getElementById('submit-button');
+        const formMessageEl = document.getElementById('form-message');
+        const reportsListEl = document.getElementById('reports-list');
+
+        // Função para mostrar o modal de confirmação
+        function showConfirmationModal() {
+            document.getElementById('confirmation-modal').classList.remove('hidden');
+            document.getElementById('confirmation-modal').classList.add('flex');
+            document.getElementById('modal-close-button').onclick = () => {
+                document.getElementById('confirmation-modal').classList.add('hidden');
+                document.getElementById('confirmation-modal').classList.remove('flex');
+            };
+        }
+
+        // Função principal de inicialização do Firebase e autenticação
+        async function initializeFirebase() {
+            if (!firebaseConfig) {
+                authStatusEl.textContent = "Erro: Configuração do Firebase não encontrada.";
+                authStatusEl.classList.replace('text-red-500', 'text-red-700');
+                console.error("Firebase config is missing.");
+                return;
+            }
+
+            try {
+                // Ativar logs de debug para o Firestore
+                setLogLevel('debug');
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Autenticação
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        currentUserId = user.uid;
+                        userIdEl.textContent = currentUserId;
+                        authStatusEl.textContent = "Conectado";
+                        authStatusEl.classList.replace('text-red-500', 'text-green-500');
+                        submitButton.disabled = false; // Habilita o botão após a conexão
+                        isAuthReady = true;
+                        
+                        // Após a autenticação, inicia a escuta dos dados
+                        listenForReports();
+                    } else {
+                        // Se não houver token, faz login anônimo
+                        if (initialAuthToken) {
+                            // Tenta login com o token personalizado
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            // Faz login anônimo
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Erro na inicialização ou autenticação do Firebase:", error);
+                authStatusEl.textContent = `Erro de Conexão: ${error.code}`;
+                authStatusEl.classList.replace('text-red-500', 'text-red-700');
+            }
+        }
+
+        // 1. Ouvir denúncias em tempo real (onSnapshot)
+        function listenForReports() {
+            if (!isAuthReady || !db) return;
+
+            // Caminho da Coleção Pública: /artifacts/{appId}/public/data/reports
+            const collectionPath = `artifacts/${appId}/public/data/reports`;
+            const q = query(collection(db, collectionPath), orderBy("timestamp", "desc"), limit(20));
+            
+            reportsListEl.innerHTML = ''; // Limpa a mensagem de carregamento
+            
+            onSnapshot(q, (snapshot) => {
+                const reports = [];
+                snapshot.forEach((doc) => {
+                    reports.push({ id: doc.id, ...doc.data() });
+                });
+                
+                renderReports(reports);
+            }, (error) => {
+                console.error("Erro ao ouvir denúncias:", error);
+                reportsListEl.innerHTML = `<p class="text-red-500 text-center">Erro ao carregar denúncias: ${error.message}</p>`;
+            });
+        }
+
+        // 2. Renderizar a lista de denúncias
+        function renderReports(reports) {
+            reportsListEl.innerHTML = ''; // Limpa a lista antes de renderizar
+            
+            if (reports.length === 0) {
+                reportsListEl.innerHTML = `<p class="text-center text-gray-500 p-4">Nenhuma denúncia registrada ainda. Seja o primeiro!</p>`;
+                return;
+            }
+
+            reports.forEach(report => {
+                const date = report.timestamp ? new Date(report.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Data Indisponível';
+                
+                const card = `
+                    <div class="bg-indigo-50 p-4 rounded-lg shadow-md border-l-4 border-red-400 hover:shadow-lg transition">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-lg font-semibold text-indigo-800">${report.marketName} - <span class="text-base font-normal text-indigo-600">${report.city}</span></h3>
+                            <span class="text-xs font-medium px-2 py-0.5 rounded-full ${report.status === 'Aberto' ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}">${report.status}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">
+                            <span class="font-bold">${report.category || 'Problema Geral'}:</span> ${report.description.substring(0, 100)}...
+                        </p>
+                        <p class="text-xs text-gray-500 mt-2 text-right">
+                            Reportado em: ${date} por ID: ${report.userId ? report.userId.substring(0, 8) + '...' : 'Anônimo'}
+                        </p>
+                    </div>
+                `;
+                reportsListEl.innerHTML += card;
+            });
+        }
+
+        // 3. Processar o envio do formulário
+        document.getElementById('report-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!isAuthReady || !currentUserId) {
+                formMessageEl.textContent = "Aguarde a conexão com o servidor para enviar.";
+                formMessageEl.classList.remove('text-green-500');
+                formMessageEl.classList.add('text-red-500');
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.textContent = "Enviando...";
+            formMessageEl.textContent = "";
+
+            const reportData = {
+                marketName: document.getElementById('marketName').value.trim(),
+                city: document.getElementById('city').value.trim(),
+                category: document.getElementById('category').value,
+                description: document.getElementById('description').value.trim(),
+                timestamp: serverTimestamp(),
+                userId: currentUserId,
+                status: 'Aberto' // Status inicial da denúncia
+            };
+            
+            // Caminho da Coleção Pública: /artifacts/{appId}/public/data/reports
+            const collectionPath = `artifacts/${appId}/public/data/reports`;
+
+            try {
+                await addDoc(collection(db, collectionPath), reportData);
+                
+                // Sucesso
+                document.getElementById('report-form').reset();
+                showConfirmationModal();
+                formMessageEl.textContent = "Denúncia enviada com sucesso!";
+                formMessageEl.classList.remove('text-red-500');
+                formMessageEl.classList.add('text-green-500');
+
+            } catch (error) {
+                console.error("Erro ao adicionar denúncia:", error);
+                formMessageEl.textContent = `Erro ao enviar: ${error.message}`;
+                formMessageEl.classList.remove('text-green-500');
+                formMessageEl.classList.add('text-red-500');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Enviar Denúncia";
+            }
+        });
+
+        // Inicia a aplicação
+        initializeFirebase();
+    </script>
+</body>
+</html>
